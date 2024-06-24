@@ -13,6 +13,8 @@ import threading
 import pvporcupine
 import pyaudio
 import speech_recognition as sr
+from queue import Queue, Empty
+import time
 
 ACCESS_KEY = '2HEVbzGtkFD6kt8RmmIoiIrZLdzT6ViysO/an4cKZoo9Taw2vx/76A=='
 exit_flag = threading.Event()
@@ -78,7 +80,7 @@ def recognize_speech(timeout=7):
         print(f"Could not request results; {e}")
         return None
 
-def listen_for_commands():
+def listen_for_commands(command_queue):
     global all_text
     porcupine = pvporcupine.create(access_key=ACCESS_KEY, keywords=["computer"])
     pa = pyaudio.PyAudio()
@@ -114,21 +116,8 @@ def listen_for_commands():
 
                 command = recognize_speech()
                 if command:
-                    if "capture image" in command:
-                        cv2.imwrite('captured_image.png', rgb_image)
-                        rint("Capture Image Command Executed")
-                    elif "Identify Text" in command:
-                        all_text = read_text_from_image('captured_image.png')
-                        print("Text Identified: ")
-                        print(all_text)
-                        print("Identify Text Command Executed")
-                    elif "text to speech" in command:
-                        if all_text:
-                            speak_text(all_text)
-                            print("Text to Speech Command Executed")
-                        else:
-                            print("No text available to read. Please perform OCR operation again.")
-                    elif "stop" in command or "listen" in command:
+                    command_queue.put(command)
+                    if "stop" in command or "listen" in command:
                         print("Stop command detected, exiting program...")
                         exit_flag.set()
                         break
@@ -139,6 +128,30 @@ def listen_for_commands():
             stream.close()
         pa.terminate()
         porcupine.delete()
+
+def process_commands(command_queue):
+    global all_text, rgb_image
+    while not exit_flag.is_set():
+        try:
+            command = command_queue.get(timeout=1)
+            if "capture image" in command:
+                cv2.imwrite('captured_image.png', rgb_image)
+                print("Capture Image Command Executed")
+            elif "identify text" in command:
+                all_text = read_text_from_image('captured_image.png')
+                print("Text Identified: ")
+                print(all_text)
+                print("Identify Text Command Executed")
+            elif "text to speech" in command:
+                if all_text:
+                    speak_text(all_text)
+                    print("Text to Speech Command Executed")
+                else:
+                    print("No text available to read. Please perform OCR operation again.")
+        except Empty:
+            pass
+        finally:
+            time.sleep(0.1)
 
 def main():
     global rgb_image
@@ -186,7 +199,7 @@ def main():
 
     rgb_window = "Streaming"
     cv2.namedWindow(rgb_window, cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty(rgb_window, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.resizeWindow(rgb_window, 1640, 1480)  # Smaller window dimensions
 
     monitor = get_monitors()[0]  
     screen_width, screen_height = monitor.width, monitor.height
@@ -202,8 +215,13 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    command_thread = threading.Thread(target=listen_for_commands)
+    command_queue = Queue()
+
+    command_thread = threading.Thread(target=listen_for_commands, args=(command_queue,))
     command_thread.start()
+
+    process_thread = threading.Thread(target=process_commands, args=(command_queue,))
+    process_thread.start()
 
     try:
         while not exit_flag.is_set():
@@ -211,8 +229,8 @@ def main():
                 rgb_image = np.rot90(observer.images[aria.CameraId.Rgb], -1)
                 rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
 
-                # Resize image to screen resolution
-                rgb_image = cv2.resize(rgb_image, (screen_width, screen_height))
+                # Resize image to window dimensions
+                rgb_image = cv2.resize(rgb_image, (1640, 1480))
 
                 cv2.imshow(rgb_window, rgb_image)
                 del observer.images[aria.CameraId.Rgb]
