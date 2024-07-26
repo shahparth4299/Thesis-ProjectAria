@@ -13,3 +13,10 @@ Using EasyOCR and Paddle OCR to read the content available in front of user.
 
 Voice Assistant
 Implemeting voice assistant using Text to Speech and listening for voice commands using pvporcupine, pyaudio, speech_recognition. 
+
+Desktop Figma Design
+
+![alt text](https://github.com/shahparth4299/Thesis-ProjectAria/blob/main/HomePagehomepage.png)
+
+![alt text](https://github.com/shahparth4299/Thesis-ProjectAria/blob/main/Reading%20Mode.png)
+
