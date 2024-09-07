@@ -1,5 +1,20 @@
 # Thesis-ProjectAria
 
+
+Setup Instructions
+
+In FAST API backend I have used 3 libraries.
+1. YOLO V8
+2. EasyOCR
+3. face_recognition
+
+Install all 3 libraries and for Yolo put the yolov8.pt file inside backend folder. 
+The FastAPI contains requirement.txt folder so all the required libraries used in fast api will be installed. 
+
+command to run fastapi : "uvicorn main:app --reload"
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
 Assistive Navigation For Visually Impaired Individuals using Aria Glasses
 
 About Project Aria
@@ -19,4 +34,6 @@ Desktop Figma Design
 ![alt text](https://github.com/shahparth4299/Thesis-ProjectAria/blob/main/HomePagehomepage.png)
 
 ![alt text](https://github.com/shahparth4299/Thesis-ProjectAria/blob/main/Reading%20Mode.png)
+
+
 
